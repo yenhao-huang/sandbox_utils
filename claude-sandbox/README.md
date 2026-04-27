@@ -1,12 +1,12 @@
 # claude-sandbox
 
-Claude Code 隔離執行環境，基於 Docker。預設以 `bypassPermissions` 模式啟動，無需手動授權每個操作。
+Claude Code running in an isolated Docker container with `bypassPermissions` mode built in — no manual permission prompts.
 
 Docker Hub: [yenhao123/claude-sandbox](https://hub.docker.com/r/yenhao123/claude-sandbox)
 
 ---
 
-## 首次安裝
+## First-time Setup
 
 ### 1. Pull image
 
@@ -15,7 +15,7 @@ docker pull yenhao123/claude-sandbox:latest
 docker tag yenhao123/claude-sandbox:latest claude-sandbox
 ```
 
-### 2. 設定 run.sh
+### 2. Install run.sh
 
 ```bash
 mkdir -p ~/.claude/docker
@@ -23,47 +23,47 @@ cp run.sh ~/.claude/docker/run.sh
 chmod +x ~/.claude/docker/run.sh
 ```
 
-### 3. 加 alias
+### 3. Add alias
 
 ```bash
 echo 'alias claude-docker="$HOME/.claude/docker/run.sh"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### 4. 複製 Claude 憑證
+### 4. Copy Claude credentials
 
 ```bash
-# 從舊機器複製，或登入後自動產生
+# Copy from another machine, or log in to generate
 scp oldmachine:~/.claude/.credentials.json ~/.claude/.credentials.json
 chmod 600 ~/.claude/.credentials.json
 ```
 
 ---
 
-## 日常使用
+## Daily Usage
 
 ```bash
 cd /your/project
-claude-docker          # 進入 Claude Code（bypassPermissions 已內建）
+claude-docker
 ```
 
-Container 為 persistent（`--restart unless-stopped`），第一次啟動後常駐，之後每次 `claude-docker` 直接 `exec` 進去。
+The container runs persistently (`--restart unless-stopped`). The first call starts it; subsequent calls `exec` directly into the running container.
 
 ---
 
-## 運作原理
+## How It Works
 
-- `run.sh` 啟動時把 `~/.claude/.credentials.json` 和 `settings.json` 複製到 `/tmp/claude-sandbox-runtime/`，掛載進 container
-- Workspace 固定掛載 `/tmp2/howard` → `/workspace`，執行目錄自動對應
-- Claude 以非 root user（host UID）執行，避免 `bypassPermissions` 的 root 限制
-- `HOME` 設為 `/claude-home`，credentials 放在 `/claude-home/.claude/`
+- `run.sh` copies `~/.claude/.credentials.json` and `settings.json` to `/tmp/claude-sandbox-runtime/` and mounts them into the container
+- `/tmp2/howard` is mounted as `/workspace`; the working directory inside the container mirrors your current path on the host
+- Claude runs as the host user (non-root) via `--user $(id -u):$(id -g)` so `bypassPermissions` is not blocked
+- `HOME` is set to `/claude-home` where credentials are placed at `/claude-home/.claude/`
 
 ---
 
-## 更新 image
+## Upgrading the Image
 
 ```bash
-# 修改 Dockerfile 後
+# After editing the Dockerfile
 cd ~/.claude/docker
 docker build -t claude-sandbox .
 docker tag claude-sandbox yenhao123/claude-sandbox:<new-version>
@@ -76,7 +76,7 @@ docker push yenhao123/claude-sandbox:latest
 
 ## Tags
 
-| Tag | 說明 |
-|-----|------|
-| `latest` | 最新版本 |
-| `2.1.119-bypass` | Claude Code 2.1.119，內建 bypassPermissions |
+| Tag | Description |
+|-----|-------------|
+| `latest` | Latest build |
+| `2.1.119-bypass` | Claude Code 2.1.119 with bypassPermissions entrypoint |
