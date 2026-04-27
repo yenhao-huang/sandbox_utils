@@ -8,14 +8,21 @@ Docker Hub: [yenhao123/claude-sandbox](https://hub.docker.com/r/yenhao123/claude
 
 ## First-time Setup
 
-### 1. Pull image
+### 1. Clone this repo
+
+```bash
+git clone https://github.com/yenhao-huang/sandbox_utils.git
+cd sandbox_utils/claude-sandbox
+```
+
+### 2. Pull image
 
 ```bash
 docker pull yenhao123/claude-sandbox:latest
 docker tag yenhao123/claude-sandbox:latest claude-sandbox
 ```
 
-### 2. Install run.sh
+### 3. Install run.sh
 
 ```bash
 mkdir -p ~/.claude/docker
@@ -23,14 +30,14 @@ cp run.sh ~/.claude/docker/run.sh
 chmod +x ~/.claude/docker/run.sh
 ```
 
-### 3. Add alias
+### 4. Add alias
 
 ```bash
 echo 'alias claude-docker="$HOME/.claude/docker/run.sh"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### 4. Copy Claude credentials
+### 5. Copy Claude credentials
 
 ```bash
 # Copy from another machine, or log in to generate
