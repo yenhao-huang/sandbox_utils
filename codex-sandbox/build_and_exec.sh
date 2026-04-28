@@ -1,3 +1,8 @@
+if docker ps -a --format '{{.Names}}' | grep -q '^codex-sandbox$'; then
+    docker stop codex-sandbox
+    docker rm codex-sandbox
+fi
+
 docker build \
   --build-arg UID="$(id -u)" \
   --build-arg GID="$(id -g)" \
@@ -12,6 +17,8 @@ docker run -d \
     -e HOME=/home/howard \
     -v /tmp2/howard/side_project/RAG:/workspace \
     -v /tmp2/howard/side_project/sandbox_utils/.runtime/ssh:/home/howard/.ssh:ro \
+    -v /tmp2/share_data:/models \
+    -v /mnt/share_data_78:/data \
     codex-sandbox:local \
     sleep infinity
 
