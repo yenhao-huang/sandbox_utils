@@ -13,7 +13,14 @@ The published image is expected to include `openssh-client`, `git`, and `ca-cert
 Local image build:
 
 ```bash
+cd /path/to/sandbox_utils
 docker build -t codex-sandbox:local ./codex-sandbox
+```
+
+You can also build with an absolute path:
+
+```bash
+docker build -t codex-sandbox:local /path/to/sandbox_utils/codex-sandbox
 ```
 
 Docker sandbox plugin:
