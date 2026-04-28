@@ -204,7 +204,9 @@ EOF
 
     image_to_run="${IMAGE_TAG}"
     if [ -n "${IMAGE_REF:-}" ]; then
-      docker pull "${IMAGE_REF}"
+      if ! docker image inspect "${IMAGE_REF}" >/dev/null 2>&1; then
+        docker pull "${IMAGE_REF}"
+      fi
       image_to_run="${IMAGE_REF}"
     else
       [ -n "${DOCKERFILE_PATH:-}" ] || die "state is missing DOCKERFILE_PATH. recreate the sandbox"
