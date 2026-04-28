@@ -1,36 +1,82 @@
 # Codex Sandbox
 
-Run Codex inside Docker with `ssh`, `git`, and a named `howard` user.
+Run Codex inside Docker with `ssh`, `git`, and a named user.
 
-Steps:
+Clone the repo and enter the `codex-sandbox` directory:
 
 ```bash
 git clone git@github.com:yenhao-huang/sandbox_utils.git
 cd sandbox_utils/codex-sandbox
+```
 
-# 建立 image
+Set customized variables:
+
+```bash
+CONTAINER_NAME=codex-sandbox
+WORKSPACE_DIR=/path/to/your/repo 
+SSH_DIR=/path/to/sandbox_utils/.runtime/ssh
+CONTAINER_HOME=/home/howard
+CONTAINER_WORKDIR=/workspace
+```
+- `CONTAINER_NAME=codex-sandbox`，容器名稱。之後 `docker exec -it "${CONTAINER_NAME}" bash` 會用到。
+- `WORKSPACE_DIR=/path/to/your/repo`，主機上的專案路徑。會掛到容器內的 `${CONTAINER_WORKDIR}`。
+- `SSH_DIR=/path/to/sandbox_utils/.runtime/ssh`，主機上的 SSH 檔案目錄。會掛到容器內的 `${CONTAINER_HOME}/.ssh`。
+- `CONTAINER_HOME=/home/howard`，容器內使用者的 home 目錄。`HOME` 環境變數會設成這個值。
+- `CONTAINER_WORKDIR=/workspace`，容器內的工作目錄。`docker run -w` 會用到。
+
+
+Build the image:
+
+```bash
 docker build \
   --build-arg UID="$(id -u)" \
   --build-arg GID="$(id -g)" \
   --build-arg USERNAME=howard \
   -t codex-sandbox:local \
   .
+```
 
-# 測試
+Verify the image:
+
+```bash
 docker run --rm codex-sandbox:local whoami
 docker run --rm codex-sandbox:local ssh -V
 docker run --rm codex-sandbox:local codex --version
+```
 
-# 建立永久 container
+Prepare SSH files:
+
+```bash
+mkdir -p "${SSH_DIR}"
+cp ~/.ssh/id_ed25519 "${SSH_DIR}/"
+cp ~/.ssh/id_ed25519.pub "${SSH_DIR}/"
+cp ~/.ssh/known_hosts "${SSH_DIR}/"
+chmod 700 "${SSH_DIR}"
+chmod 600 "${SSH_DIR}/id_ed25519"
+```
+
+Start a long-running container:
+
+```bash
 docker run -d \
-    --name codex-sandbox \
-    -w /workspace \
-    -e HOME=/home/howard \
-    -v /tmp2/howard/side_project/RAG:/workspace \
-    -v /tmp2/howard/side_project/sandbox_utils/.runtime/ssh:/home/howard/.ssh:ro \
-    codex-sandbox:local \
-    sleep infinity
+  --name "${CONTAINER_NAME}" \
+  -w "${CONTAINER_WORKDIR}" \
+  -e HOME="${CONTAINER_HOME}" \
+  -v "${WORKSPACE_DIR}:${CONTAINER_WORKDIR}" \
+  -v "${SSH_DIR}:${CONTAINER_HOME}/.ssh:ro" \
+  codex-sandbox:local \
+  sleep infinity
+```
 
-# 進入 container
-docker exec -it codex-sandbox bash
+Enter the container:
+
+```bash
+docker exec -it "${CONTAINER_NAME}" bash
+```
+
+Install packages inside the container:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y vim
 ```
