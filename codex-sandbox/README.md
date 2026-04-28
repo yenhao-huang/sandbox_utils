@@ -8,6 +8,14 @@ Image:
 docker pull yenhao123/codex-sandbox:latest
 ```
 
+The published image is expected to include `openssh-client`, `git`, and `ca-certificates`, so `git push` works for SSH remotes such as `git@github.com:...`.
+
+Local image build:
+
+```bash
+docker build -t codex-sandbox:local ./codex-sandbox
+```
+
 Docker sandbox plugin:
 
 ```bash
