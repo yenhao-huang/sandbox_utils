@@ -11,14 +11,17 @@ CONTAINER_WORKDIR="${CONTAINER_WORKDIR:-/workspace}"
 BUILD_CONTEXT="${BUILD_CONTEXT:-${SCRIPT_DIR}}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 SSH_DIR="${SSH_DIR:-${SCRIPT_DIR}/../.runtime/.ssh}"
+SKILLS_DIR="${SKILLS_DIR:-${HOME}/.agents/skills}"
 MODEL_DIR="${MODEL_DIR:-}"
 DATA_DIR="${DATA_DIR:-}"
+CONTAINER_SKILLS_DIR="${CONTAINER_SKILLS_DIR:-${CONTAINER_HOME}/.agents/skills}"
 CONTAINER_MODEL_DIR="${CONTAINER_MODEL_DIR:-/models}"
 CONTAINER_DATA_DIR="${CONTAINER_DATA_DIR:-/data}"
 EXTRA_MOUNTS="${EXTRA_MOUNTS:-}"
 GPU_DEVICES="${GPU_DEVICES:-all}"
 
 mkdir -p "${SSH_DIR}"
+mkdir -p "${SKILLS_DIR}"
 
 if [[ -f "${HOME}/.ssh/id_ed25519" ]]; then
   cp "${HOME}/.ssh/id_ed25519" "${SSH_DIR}/"
@@ -62,6 +65,7 @@ docker_args=(
   -e "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
   -v "${WORKSPACE_DIR}:${CONTAINER_WORKDIR}"
   -v "${SSH_DIR}:${CONTAINER_HOME}/.ssh:ro"
+  -v "${SKILLS_DIR}:${CONTAINER_SKILLS_DIR}"
 )
 
 if [[ -n "${GPU_DEVICES}" && "${GPU_DEVICES}" != "none" ]]; then
