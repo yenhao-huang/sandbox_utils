@@ -6,3 +6,4 @@ Directories:
 
 - `codex-sandbox/`: Codex sandbox tooling and usage
 - `claude-sandbox/`: Claude Code sandbox — `run.sh` launch script, `Dockerfile` for `yenhao123/claude-sandbox`
+- `.agents/skills/`: Agent skill definitions, each stored as `<skill-name>/SKILL.md`

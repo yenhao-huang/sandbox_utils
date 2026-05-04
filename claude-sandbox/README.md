@@ -22,27 +22,47 @@ docker pull yenhao123/claude-sandbox:latest
 docker tag yenhao123/claude-sandbox:latest claude-sandbox
 ```
 
-### 3. Install run.sh
-
-```bash
-mkdir -p ~/.claude/docker
-cp run.sh ~/.claude/docker/run.sh
-chmod +x ~/.claude/docker/run.sh
-```
-
-### 4. Add alias
-
-```bash
-echo 'alias claude-docker="$HOME/.claude/docker/run.sh"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 5. Copy Claude credentials
+### 3. Copy Claude credentials
 
 ```bash
 # Copy from another machine, or log in to generate
 scp oldmachine:~/.claude/.credentials.json ~/.claude/.credentials.json
 chmod 600 ~/.claude/.credentials.json
+```
+
+### 4. Prepare runtime directory
+
+```bash
+RUNTIME_DIR="/tmp/claude-sandbox-runtime"
+mkdir -p "${RUNTIME_DIR}/ssh" "${RUNTIME_DIR}/claude-home/.claude"
+cp ~/.claude/.credentials.json "${RUNTIME_DIR}/claude-home/.claude/.credentials.json"
+cp ~/.claude/settings.json     "${RUNTIME_DIR}/claude-home/.claude/settings.json"
+cp ~/.ssh/id_ed25519           "${RUNTIME_DIR}/ssh/id_ed25519"
+cp ~/.ssh/id_ed25519.pub       "${RUNTIME_DIR}/ssh/id_ed25519.pub"
+cp ~/.ssh/known_hosts          "${RUNTIME_DIR}/ssh/known_hosts"
+chmod 600 "${RUNTIME_DIR}/claude-home/.claude/.credentials.json"
+chmod 600 "${RUNTIME_DIR}/ssh/id_ed25519"
+```
+
+### 5. Start container
+
+```bash
+RUNTIME_DIR="/tmp/claude-sandbox-runtime"
+MODEL_DIR="/mnt/share_data_78/howard/models"
+DATA_DIR="/mnt/share_data_78/howard/data"
+
+docker run -d \
+  --name claude-docker \
+  --restart unless-stopped \
+  -v "${RUNTIME_DIR}/claude-home:/claude-home" \
+  -v "${RUNTIME_DIR}/ssh:/claude-home/.ssh:ro" \
+  -v "/tmp2/howard:/workspace" \
+  -v "${MODEL_DIR}:/models" \
+  -v "${DATA_DIR}:/data" \
+  -w /workspace \
+  --network host \
+  --entrypoint sleep \
+  claude-sandbox infinity
 ```
 
 ---
@@ -51,19 +71,23 @@ chmod 600 ~/.claude/.credentials.json
 
 ```bash
 cd /your/project
-claude-docker
+docker exec -it \
+  -w "/workspace/$(realpath --relative-to="/tmp2/howard" "$(pwd)")" \
+  --user "$(id -u):$(id -g)" \
+  -e HOME=/claude-home \
+  claude-docker claude
 ```
 
-The container runs persistently (`--restart unless-stopped`). The first call starts it; subsequent calls `exec` directly into the running container.
+The container runs persistently (`--restart unless-stopped`). If the container is not running, repeat step 5 to start it again.
 
 ---
 
 ## How It Works
 
-- `run.sh` copies `~/.claude/.credentials.json` and `settings.json` to `/tmp/claude-sandbox-runtime/` and mounts them into the container
-- `/tmp2/howard` is mounted as `/workspace`; the working directory inside the container mirrors your current path on the host
-- Claude runs as the host user (non-root) via `--user $(id -u):$(id -g)` so `bypassPermissions` is not blocked
-- `HOME` is set to `/claude-home` where credentials are placed at `/claude-home/.claude/`
+- Runtime files (`credentials.json`, `settings.json`, SSH keys) are copied to `/tmp/claude-sandbox-runtime/` and mounted into the container.
+- `/tmp2/howard` is mounted as `/workspace`; the working directory inside the container mirrors your current path on the host.
+- Claude runs as the host user (non-root) via `--user $(id -u):$(id -g)` so `bypassPermissions` is not blocked.
+- `HOME` is set to `/claude-home` where credentials are placed at `/claude-home/.claude/`.
 
 ---
 
@@ -71,7 +95,6 @@ The container runs persistently (`--restart unless-stopped`). The first call sta
 
 ```bash
 # After editing the Dockerfile
-cd ~/.claude/docker
 docker build -t claude-sandbox .
 docker tag claude-sandbox yenhao123/claude-sandbox:<new-version>
 docker tag claude-sandbox yenhao123/claude-sandbox:latest

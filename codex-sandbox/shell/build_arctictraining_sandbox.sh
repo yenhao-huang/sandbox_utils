@@ -2,21 +2,29 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SANDBOX_DIR}/.." && pwd)"
 
 IMAGE_NAME="${IMAGE_NAME:-codex-sandbox:local}"
-CONTAINER_NAME="${CONTAINER_NAME:-codex-sandbox}"
+CONTAINER_NAME="${CONTAINER_NAME:-codex-sandbox-arctictraining}"
 USERNAME="${USERNAME:-$(id -un)}"
+HOST_UID="${HOST_UID:-$(id -u)}"
+HOST_GID="${HOST_GID:-$(id -g)}"
 CONTAINER_HOME="${CONTAINER_HOME:-/home/${USERNAME}}"
 CONTAINER_WORKDIR="${CONTAINER_WORKDIR:-/workspace}"
-BUILD_CONTEXT="${BUILD_CONTEXT:-${SCRIPT_DIR}}"
-WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
-SSH_DIR="${SSH_DIR:-${SCRIPT_DIR}/../.runtime/.ssh}"
-MODEL_DIR="${MODEL_DIR:-}"
-DATA_DIR="${DATA_DIR:-}"
+WORKSPACE_DIR="${WORKSPACE_DIR:-/tmp2/howard/PRetrieval/ArcticTraining}"
+SSH_DIR="${SSH_DIR:-${REPO_ROOT}/.runtime/.ssh}"
+MODEL_DIR="${MODEL_DIR:-/mnt/share_data_78/howard/models}"
+DATA_DIR="${DATA_DIR:-/mnt/share_data_78/howard/data}"
 CONTAINER_MODEL_DIR="${CONTAINER_MODEL_DIR:-/models}"
 CONTAINER_DATA_DIR="${CONTAINER_DATA_DIR:-/data}"
 EXTRA_MOUNTS="${EXTRA_MOUNTS:-}"
 GPU_DEVICES="${GPU_DEVICES:-all}"
+
+if [[ ! -d "${WORKSPACE_DIR}" ]]; then
+  echo "WORKSPACE_DIR does not exist: ${WORKSPACE_DIR}" >&2
+  exit 1
+fi
 
 mkdir -p "${SSH_DIR}"
 
@@ -47,14 +55,15 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
 fi
 
 docker build \
-  --build-arg UID="$(id -u)" \
-  --build-arg GID="$(id -g)" \
+  --build-arg UID="${HOST_UID}" \
+  --build-arg GID="${HOST_GID}" \
   --build-arg USERNAME="${USERNAME}" \
   -t "${IMAGE_NAME}" \
-  "${BUILD_CONTEXT}"
+  "${SANDBOX_DIR}"
 
 docker_args=(
   run -d
+  --user "${HOST_UID}:${HOST_GID}"
   --name "${CONTAINER_NAME}"
   -w "${CONTAINER_WORKDIR}"
   -e "HOME=${CONTAINER_HOME}"
@@ -67,6 +76,7 @@ docker_args=(
 if [[ -n "${GPU_DEVICES}" && "${GPU_DEVICES}" != "none" ]]; then
   docker_args+=(--gpus "${GPU_DEVICES}")
 fi
+
 if [[ -n "${MODEL_DIR}" ]]; then
   docker_args+=(-v "${MODEL_DIR}:${CONTAINER_MODEL_DIR}")
 fi
